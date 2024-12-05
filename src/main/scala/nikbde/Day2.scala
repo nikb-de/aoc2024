@@ -27,8 +27,17 @@ object Day2 {
       row + res
 
     })
-
+    val s =
+      """
+        |fdafds
+        |fdsafdsa
+        |fdsafdsa
+        |""".stripMargin
     println(resSum)
 
+    println(s)
+
   }
+
+
 }
