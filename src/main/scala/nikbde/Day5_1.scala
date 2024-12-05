@@ -1,6 +1,6 @@
 package nikbde
 
-import scala.collection.immutable.HashMap
+import scala.annotation.tailrec
 
 object Day5_1 {
 
@@ -8,71 +8,60 @@ object Day5_1 {
 
     val bufferedSource = io.Source.fromResource("day5.txt").getLines()
 
-    val part = bufferedSource.partition(x => x.contains("|"))
+    val (dependencyLines, otherLines)  = bufferedSource.partition(x => x.contains("|"))
 
-    val depL = part._1.toList
+    val depL = dependencyLines.toList
 
-    val depMap = depL.foldLeft(new HashMap[Int, Set[Int]]())((acc, x) => {
-      val split = x.split("\\|")
-      val key = split(0).toInt
-      val value = split(1).toInt
-      acc + (key -> (acc.getOrElse(key, Set[Int]()) + value))
-    })
+    val dependencyMap = parseDependencies(depL)
+    val reverseDependencyMap = parseDependencies(depL, reverse = true)
 
-    val depMapOpp = depL.foldLeft(new HashMap[Int, Set[Int]]())((acc, x) => {
-      val split = x.split("\\|")
-      val key = split(1).toInt
-      val value = split(0).toInt
-      acc + (key -> (acc.getOrElse(key, Set[Int]()) + value))
-    })
 
-    println(depMapOpp)
-
-    val badVals = part._2
+    val badVals = otherLines
       .filter(_ != "")
       .map(x => x.split(",").map(_.toInt))
-      .filter(x => {
-        val goodVals = x.foldLeft((true, Set[Int]()))((acc, y) => {
-          val deps = depMap.getOrElse(y, Set[Int]())
-
-          deps.intersect(acc._2) match {
-            case x if x.isEmpty => (acc._1, acc._2 + y)
-            case _ => (false, acc._2)
-          }
-        })._1
-        !goodVals
-      })
-      .map(x => reorderBadVals(x, depMapOpp))
-      .map( x =>
-        println(x.mkString(","))
-        x
-      )
+      .filterNot(isValid(_, dependencyMap))
+      .map(x => reorderBadVals(x, reverseDependencyMap))
       .map(x => x((x.length - 1) / 2))
-
 
     println(badVals.sum)
   }
 
-  def reorderBadVals(badVals: Array[Int], depMap: HashMap[Int, Set[Int]]): Array[Int] = {
+  private def isValid(values: Array[Int], depMap: Map[Int, Set[Int]]): Boolean = {
+    values.foldLeft((true, Set.empty[Int])) { case ((isValid, collected), value) =>
+      val deps = depMap.getOrElse(value, Set.empty)
+      if (deps.intersect(collected).nonEmpty) (false, collected)
+      else (isValid, collected + value)
+    }._1
+  }
+
+  private def parseDependencies(lines: List[String], reverse: Boolean = false): Map[Int, Set[Int]] = {
+    lines.foldLeft(Map.empty[Int, Set[Int]]) { (acc, line) =>
+      val Array(key, value) = line.split("\\|").map(_.toInt)
+      val (k, v) = if (reverse) (value, key) else (key, value)
+      acc.updated(k, acc.getOrElse(k, Set.empty[Int]) + v)
+    }
+  }
+
+  private def reorderBadVals(badVals: Array[Int], depMap: Map[Int, Set[Int]]): Array[Int] = {
 
     val setBadVals = badVals.toSet
-    val filteredMap = depMap.filter(x => badVals.contains(x._1))
-      .map(x => (x._1, x._2.intersect(setBadVals)))
+    val filteredMap = depMap.filter((key, v) => badVals.contains(key))
+      .map((k, v) => (k, v.intersect(setBadVals)))
 
-
-    def topologicalSort(bad: Array[Int], depMap: HashMap[Int, Set[Int]], collected: Set[Int]): Array[Int] = {
-      val (noDeps, withDeps) = bad.partition(x => filteredMap.getOrElse(x, Set[Int]()).diff(collected).isEmpty)
+    @tailrec
+    def topologicalSort(bad: Array[Int], depMap: Map[Int, Set[Int]], collected: Array[Int]): Array[Int] = {
+      val (noDeps, withDeps) = bad.partition(x => filteredMap.getOrElse(x, Set[Int]()).diff(collected.toSet).isEmpty)
       if (noDeps.isEmpty) {
         throw new Exception("No topological sort possible")
       }
       if (withDeps.isEmpty) {
-        noDeps
+        collected ++ noDeps
       } else {
-        noDeps ++ topologicalSort(withDeps, depMap, collected ++ noDeps)
+         topologicalSort(withDeps, depMap, collected ++ noDeps)
       }
     }
 
-    topologicalSort(badVals, depMap, Set[Int]())
+    topologicalSort(badVals, depMap, Array[Int]())
   }
 
 }
