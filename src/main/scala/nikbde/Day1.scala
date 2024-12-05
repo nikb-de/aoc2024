@@ -3,7 +3,7 @@ package nikbde
 object Day1 {
   def read_day11(): (List[Int], List[Int]) = {
 
-    val bufferedSource = io.Source.fromResource("day1.txt")
+    val bufferedSource = io.Source.fromResource("real_inputs/day1.txt")
 
     bufferedSource.getLines()
       .map(_.split("   ").take(2).map(_.toInt).toList)
