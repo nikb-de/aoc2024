@@ -4,13 +4,12 @@ import scala.annotation.tailrec
 
 object Day5 {
 
-  @main def day5_m(): Unit = {
+  @main def day5_m(): Unit =
     println(task1())
     println(task2())
-  }
 
   private def task1(): Int = {
-    val bufferedSource = io.Source.fromResource("day5.txt").getLines()
+    val bufferedSource = io.Source.fromResource("real_inputs/day5.txt").getLines()
     val (dependencyLines, otherLines) = bufferedSource.partition(x => x.contains("|"))
     val depL = dependencyLines.toList
     val dependencyMap = parseDependencies(depL)
@@ -25,7 +24,7 @@ object Day5 {
   }
 
   private def task2(): Int = {
-    val bufferedSource = io.Source.fromResource("day5.txt").getLines()
+    val bufferedSource = io.Source.fromResource("real_inputs/day5.txt").getLines()
     val (dependencyLines, otherLines) = bufferedSource.partition(x => x.contains("|"))
     val depL = dependencyLines.toList
     val dependencyMap = parseDependencies(depL)
