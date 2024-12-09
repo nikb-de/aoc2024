@@ -13,17 +13,78 @@ object Day6 {
   enum Direction:
     case Up, Right, Down, Left
 
-  def getDirection(ch: Char): Option[Direction] = ch match {
+
+  case class Field(
+    walls: Set[(Int, Int)],
+    xBorder: Int,
+    yBorder: Int)
+
+
+  case class CursorPos(
+    x: Int,
+    y: Int,
+    direction: Direction)
+
+  private def parseInput(input: List[String]): (Field, CursorPos)  =
+    val walls = input.zipWithIndex.flatMap {
+      case (line, x) => line.zipWithIndex.collect{
+      case ('#', y) => (x, y)}
+    }.toSet
+
+    val startPos = input.zipWithIndex.flatMap {
+      case (line, x) => line.zipWithIndex.collectFirst {
+        case (ch, y) if getDirection(ch).isDefined => CursorPos(x, y, getDirection(ch).get)
+      }
+    }.head
+
+    (Field(walls, input.head.length - 1, input.length - 1), startPos)
+
+  end parseInput
+
+
+  private def getDirection(ch: Char): Option[Direction] = ch match
     case '^' => Some(Direction.Up)
     case 'v' => Some(Direction.Down)
     case '<' => Some(Direction.Left)
     case '>' => Some(Direction.Right)
     case _ => None
-  }
 
 
-  case class Field(walls: Set[(Int, Int)], xBorder: Int, yBorder: Int)
-  case class CursorPos(x: Int, y: Int, direction: Direction)
+  private def getNextPos(cursorPos: CursorPos): CursorPos =
+    cursorPos.direction match
+      case Direction.Up => cursorPos.copy(x = cursorPos.x - 1)
+      case Direction.Right => cursorPos.copy(y = cursorPos.y + 1)
+      case Direction.Down => cursorPos.copy(x = cursorPos.x + 1)
+      case Direction.Left => cursorPos.copy(y = cursorPos.y - 1)
+
+
+  private def rotateDirection(cursorPos: CursorPos, walls: Set[(Int, Int)]): CursorPos =
+    cursorPos.direction match
+      case Direction.Up => cursorPos.copy(direction = Direction.Right)
+      case Direction.Right => cursorPos.copy(direction = Direction.Down)
+      case Direction.Down => cursorPos.copy(direction = Direction.Left)
+      case Direction.Left => cursorPos.copy(direction = Direction.Up)
+
+
+  private def isVaildPosition(field: Field, cursorPos: CursorPos): Boolean =
+    cursorPos.x >= 0 && cursorPos.y >= 0 &&
+      cursorPos.x <= field.xBorder &&
+      cursorPos.y <= field.yBorder
+
+//  private def findVisitedTitles(field: Field, cursorPos: CursorPos): Set[(Int, Int)] =
+
+//    @tailrec
+//    def traverse(cursorPos: CursorPos,
+//                 visited: Set[(Int, Int)]): Set[(Int, Int)] =
+//      val curPos = (cursorPos.x, cursorPos.y)
+//
+//      if (!isVaildPosition(field, cursorPos))
+//        then visited
+//      else
+//        val newVisited = visited + curPos
+//        val potenitialPos = getNextPos(cursorPos)
+
+
 
 
 
@@ -49,33 +110,12 @@ object Day6 {
   }
 
 
-  def getNextPos(cursorPos: CursorPos): CursorPos = {
-    val (x, y) = (cursorPos.x, cursorPos.y)
-    cursorPos.direction match {
-      case Direction.Up => cursorPos.copy(x = x - 1)
-      case Direction.Right => cursorPos.copy(y = y + 1)
-      case Direction.Down => cursorPos.copy(x = x + 1)
-      case Direction.Left => cursorPos.copy(y = y - 1)
-    }
-  }
-
-  def rotateDirection(cursorPos: CursorPos, walls: Set[(Int, Int)]): CursorPos = {
-    cursorPos.direction match {
-      case Direction.Up => cursorPos.copy(direction = Direction.Right)
-      case Direction.Right => cursorPos.copy(direction = Direction.Down)
-      case Direction.Down => cursorPos.copy(direction = Direction.Left)
-      case Direction.Left => cursorPos.copy(direction = Direction.Up)
-    }
-  }
-
-
   def playGame(field: Field,
                visited: Set[(Int, Int)],
                cursorPos: CursorPos): Int = {
 
     val (x, y) = (cursorPos.x, cursorPos.y)
     if (x < 0 || y < 0 || x > field.xBorder || y > field.yBorder) {
-      println(visited.toList.sorted(Ordering[(Int, Int)]))
       return visited.size
     }
 
@@ -120,9 +160,8 @@ object Day6 {
 
   def day6_1(): Int = {
     val (field, cursorPos) = getField()
-    println(playGame(field, Set[(Int, Int)](), cursorPos))
-    println(s"xBorder: ${field.xBorder}, yBorder: ${field.yBorder}")
-    1
+    playGame(field, Set[(Int, Int)](), cursorPos)
+
   }
 
   def day6_2(): Int = {
@@ -138,8 +177,8 @@ object Day6 {
     val counts = addedWall.count(fl => {
       playGameWithCycles(fl, Set[CursorPos](), cursorPos)
     })
-    println(counts)
-    1
+    
+    counts
   }
 
 }
