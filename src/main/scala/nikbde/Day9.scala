@@ -76,9 +76,4 @@ object Day9 {
     
 
   end day9_2
-  
-
-
-
-
 }
